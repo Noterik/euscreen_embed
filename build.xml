@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="euscreen_embed" default="deploy-war">	
+	
+	<property name="root.dir" value="." />
+	<property name="sources.dir" value="${root.dir}/src" />
+	<property name="dist.dir" value="${root.dir}/dist" />
+	<property name="build.dir" value="${root.dir}/build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="lib.dir" value="${root.dir}/lib" />
+	<property name="test.sources.dir" value="${root.dir}/test-src" />
+	<property name="test.build.dir" value="${root.dir}/test-build" />
+	<property name="test.classes.dir" value="${test.build.dir}/test-classes" />
+	<property name="tools.dir" value="${root.dir}/tools" />
+	<property name="webcontent.dir" value="${root.dir}/WebContent" />
+	<property name="webcontent.lib.dir" value="${webcontent.dir}/WEB-INF/lib" />
+	
+	<!-- Define maven-ant-tasks location -->
+	<property name="maven.ant.tasks.jar" value="${tools.dir}/maven-ant-tasks-2.1.3.jar"/>
+	<property name="maven.ant.tasks.bootstrap.location" value="http://apache.xl-mirror.nl/maven/binaries/maven-ant-tasks-2.1.3.jar"/>
+	<available property="maven.ant.tasks.jar.exists" file="${maven.ant.tasks.jar}"/>
+	
+	<!-- Define package name and location -->
+	<property name="package.name.jar" value="${ant.project.name}.jar"/>
+	<property name="package.location.jar" value="${build.dir}/${package.name.jar}"/>
+	<property name="package.name.war" value="${ant.project.name}.war"/>
+	<property name="package.location.war" value="${dist.dir}/${package.name.war}"/>
+	
+	<path id="compile.classpath">
+
+	    <!-- Include all JAR files that will be included in /WEB-INF/lib -->
+	    <!-- *** CUSTOMIZE HERE AS REQUIRED BY YOUR APPLICATION *** -->
+	<!--
+	    <pathelement location="${foo.jar}"/>
+	-->
+
+	   <pathelement location="${webcontent.lib.dir}/servlet-api.jar" />
+	</path>
+	
+	<!-- Cleaning -->
+	<target name="clean" depends="clean.build.dirs, clean.test.build.dirs" />
+	
+	<!-- Removes all directories -->
+	<target name="clean.build.dirs">
+		<delete dir="${dist.dir}" />
+		<delete dir="${build.dir}" />
+		<delete dir="${classes.dir}" />
+		<!--<delete dir="${webcontent.lib.dir}" /> -->
+	</target>
+	
+	<!-- Removes all test directories -->
+	<target name="clean.test.build.dirs">
+		<delete dir="${test.build.dir}" />
+		<delete dir="${test.classes.dir}" />
+	</target>
+	
+	<!-- Initialisation -->
+	<target name="init" depends="clean, init.build.dirs" />
+	
+	
+	<!-- define dependencies in ant file -->
+	
+	<!-- still dependent on local libraries -->
+	<path id="lib.classpath">
+		<fileset id="lib.fileset" dir="${lib.dir}" includes="*.jar"/>
+	</path>
+
+	<!-- Creates all necessary directories -->
+	<target name="init.build.dirs">
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${webcontent.lib.dir}" />
+	</target>
+	
+	<!-- Creates all necessary directories -->
+	<target name="init.test.build.dirs">
+		<mkdir dir="${test.build.dir}" />
+		<mkdir dir="${test.classes.dir}" />
+	</target>
+
+	<!-- Compilation initialisation -->
+	<target name="compile.init" depends="init" />
+	
+	<!-- Copile java code -->
+	<target name="compile" depends="compile.init">
+	  <javac srcdir="${sources.dir}" destdir="${classes.dir}" debug="on">
+	  	<classpath refid="compile.classpath"/>
+	  </javac>
+	</target>
+
+	<!-- Jar package build -->
+	<target name="build" depends="compile,buildtime">
+		<loadfile property="time" srcFile="${webcontent.dir}/build.txt"/>
+		<delete file="${package.location.jar}"/>
+		<jar jarfile="${package.location.jar}" basedir="${classes.dir}">
+			<manifest>
+				<attribute name="Built-By" value="Noterik B.V."/>
+			   	<attribute name="Main-Class" value=""/>
+				<attribute name="Build" value="${time}"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<!-- War package build. -->
+	<target name="deploy-war" depends="clean, build">
+		<loadfile property="time" srcFile="${webcontent.dir}/build.txt"/>
+		<copy todir="${webcontent.lib.dir}" file="${package.location.jar}" />
+		
+		<war destfile="${package.location.war}" webxml="${webcontent.dir}/WEB-INF/web.xml">
+			<fileset dir="${webcontent.dir}">
+				<exclude name="WEB-INF/lib/org.apache.commons.httpclient.jar"/>
+				<exclude name="WEB-INF/lib/servlet-api.jar"/>
+			</fileset>
+			<manifest>
+				<attribute name="Built-By" value="Noterik B.V."/>
+				<attribute name="Build" value="${time}"/>
+			</manifest>
+		</war>
+	</target>
+	
+	<target name="buildtime">
+		<tstamp>
+			<format property="time" pattern="yyyy/MM/dd HH:mm:ss" unit="hour"/>
+		</tstamp>
+		<echo file="${webcontent.dir}/build.txt">${time}</echo>
+	</target>
+</project>
