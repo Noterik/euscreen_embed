@@ -1,10 +1,15 @@
 package org.springfield.euscreen.servlet;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -14,11 +19,20 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.springfield.euscreen.domain.Video;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
-public class EuscreenEmbedServlet extends HttpServlet implements Servlet{
-
+public class EuscreenEmbedServlet extends HttpServlet implements Servlet, ItemsObserver{
+	
+	private String smithersUrl = "http://localhost:8080/smithers2";
+	private Map<String, String> items;
 	/**
 	 * 
 	 */
@@ -36,7 +50,10 @@ public class EuscreenEmbedServlet extends HttpServlet implements Servlet{
 		"HTTP_VIA",
 		"REMOTE_ADDR" };
 	
-	public EuscreenEmbedServlet(){}
+	public EuscreenEmbedServlet(){
+		System.out.println("LET'S START THE MAGGIE LOADER!");
+		new ItemsRequester().addObserver(this);
+	}
 	
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
 		System.out.println("EuscreenEmbedServlet.doGet()");
@@ -115,10 +132,84 @@ public class EuscreenEmbedServlet extends HttpServlet implements Servlet{
 		video.setAutoplay(Boolean.parseBoolean(request.getParameter("autoplay")));
 		video.setLoop(Boolean.parseBoolean(request.getParameter("loop")));
 		video.setMuted(Boolean.parseBoolean(request.getParameter("muted")));
-		video.setSrc(request.getParameter("src"));
+		video.setSrc(getPath(request.getParameter("id")));
 		video.setPoster(request.getParameter("poster"));
 		
 		return video;
+	}
+	
+	private String getPath(String id){
+		System.out.println("getPath(" + id + ")");
+		if(items != null && items.containsKey(id)){
+			String path = items.get(id);
+			String urlStr = this.smithersUrl + path + "/rawvideo/1";
+			StringBuilder result = new StringBuilder();
+			HttpURLConnection conn;
+			URL url;
+			try {
+				url = new URL(urlStr);
+				conn = (HttpURLConnection) url.openConnection();
+				conn.setRequestMethod("GET");
+
+				BufferedReader rd;
+				try {
+					rd = new BufferedReader(new InputStreamReader(
+							conn.getInputStream()));
+				} catch (IOException ioe) {
+					rd = new BufferedReader(new InputStreamReader(
+							conn.getErrorStream()));
+				}
+				String line;
+				while ((line = rd.readLine()) != null) {
+					result.append(line);
+				}
+				rd.close();
+				String xmlStr = result.toString();
+				System.out.println("XML: " + xmlStr);
+				
+				
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			    DocumentBuilder builder;
+				try {
+					builder = factory.newDocumentBuilder();
+					InputSource is = new InputSource(new StringReader(xmlStr));
+				    Document doc = builder.parse(is);
+				    
+				    NodeList extensionNodes = doc.getElementsByTagName("extension");
+				    if(extensionNodes.getLength() > 0){
+				    	String extension = extensionNodes.item(0).getTextContent();
+				    	
+				    	NodeList mountNodes = doc.getElementsByTagName("mount");
+					    if(mountNodes.getLength() > 0){
+					    	String mountNodeContent = mountNodes.item(0).getTextContent();
+					    	String mount = mountNodeContent.split(",")[0];
+					    	
+					    	if (mount.indexOf("http://")==-1) {
+					    		return "http://" + mount + ".noterik.com/progressive/" + mount + "/" + path + "/rawvideo/1/raw."+ extension;
+							} else if (mount.indexOf(".noterik.com/progressive/") > -1) {
+								return mount;
+							}
+					    	
+					    }
+				    }
+				    
+				} catch (ParserConfigurationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SAXException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			    
+				
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return null;
 	}
 	
 	private void setTicket(Video video){
@@ -126,6 +217,12 @@ public class EuscreenEmbedServlet extends HttpServlet implements Servlet{
 		Integer random= randomGenerator.nextInt(100000000);
 		String ticket = Integer.toString(random);
 		video.setTicket(ticket);
+	}
+
+	@Override
+	public void update(Map<String, String> items) {
+		// TODO Auto-generated method stub
+		this.items = items;
 	}
 
 }

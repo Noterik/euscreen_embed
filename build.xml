@@ -34,6 +34,7 @@
 	-->
 
 	   <pathelement location="${webcontent.lib.dir}/servlet-api.jar" />
+	   <pathelement location="${webcontent.lib.dir}/mojo.jar" />
 	</path>
 	
 	<!-- Cleaning -->

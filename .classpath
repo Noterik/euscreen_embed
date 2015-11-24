@@ -5,5 +5,6 @@
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.apache.commons.httpclient.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/servlet-api.jar"/>
 	<classpathentry kind="lib" path="/Users/david/Documents/workspace/lou/WebContent/WEB-INF/lib/servlet-api.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/mojo.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
