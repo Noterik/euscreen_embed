@@ -132,7 +132,11 @@ public class EuscreenEmbedServlet extends HttpServlet implements Servlet, ItemsO
 		video.setAutoplay(Boolean.parseBoolean(request.getParameter("autoplay")));
 		video.setLoop(Boolean.parseBoolean(request.getParameter("loop")));
 		video.setMuted(Boolean.parseBoolean(request.getParameter("muted")));
-		video.setSrc(getPath(request.getParameter("id")));
+		if(request.getParameter("src") == null && request.getParameter("id") != null){
+			video.setSrc(getPath(request.getParameter("id")));
+		}else if(request.getParameter("src") != null){
+			video.setSrc(request.getParameter("src"));
+		}
 		video.setPoster(request.getParameter("poster"));
 		
 		return video;
